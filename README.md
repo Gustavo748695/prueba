@@ -1,25 +1,26 @@
--- 1. Cargar el archivo CSV
-raw_data = LOAD 'comentarios.csv' USING PigStorage(',') 
+-- Cargar archivo CSV desde HDFS (asegúrate que ya esté en /user/cloudera/)
+raw_data = LOAD 'comentario.csv' USING PigStorage(',')
     AS (id:int, cliente:chararray, direccion:chararray, comentario:chararray);
 
--- 2. Extraer solo los comentarios
+-- Extraer los comentarios
 comentarios = FOREACH raw_data GENERATE comentario;
 
--- 3. Separar palabras en cada comentario (tokenización)
+-- Tokenizar palabras de cada comentario
 palabras = FOREACH comentarios GENERATE FLATTEN(TOKENIZE(LOWER(comentario))) AS palabra;
 
--- 4. Filtrar palabras vacías o nulas (opcional pero recomendable)
-palabras_filtradas = FILTER palabras BY palabra IS NOT NULL AND TRIM(palabra) != '';
+-- Filtrar palabras vacías o nulas
+palabras_limpias = FILTER palabras BY palabra IS NOT NULL AND TRIM(palabra) != '';
 
--- 5. Contar frecuencia de cada palabra
-agrupado = GROUP palabras_filtradas BY palabra;
-conteo = FOREACH agrupado GENERATE group AS palabra, COUNT(palabras_filtradas) AS total;
+-- Agrupar por palabra y contar ocurrencias
+agrupado = GROUP palabras_limpias BY palabra;
+conteo = FOREACH agrupado GENERATE group AS palabra, COUNT(palabras_limpias) AS cantidad;
 
--- 6. Ordenar por frecuencia descendente
-ordenado = ORDER conteo BY total DESC;
+-- Ordenar por cantidad descendente
+ordenado = ORDER conteo BY cantidad DESC;
 
--- 7. Seleccionar las 3 palabras más frecuentes
+-- Obtener las 3 palabras más repetidas
 top3 = LIMIT ordenado 3;
 
--- 8. Mostrar resultado
+-- Mostrar resultados
 DUMP top3;
+
